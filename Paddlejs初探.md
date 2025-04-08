@@ -252,5 +252,8 @@ Paddle.js可以在浏览器和Node.js中运行。
 运行环境与计算方案紧密相关，在浏览器中可以使用WebGL、WebGPU、WASM和PlainJS计算方案完成推理。截至本书完稿之时，主流浏览器（97.93%）都支持WebGL 1.0，WebGL 2.0的兼容性较低（77.29%），WebAssembly的兼容性为93.93%，在大部分浏览器中可以获得GPU/CPU加速；在Node.js环境中可以使用NodeGL、WASM和PlainJS计算方案完成推理。
 根据终端性能、模型复杂度及想要兼容覆盖的范围，开发者可以作出最终的选择。3.4节将通过代码展示如何在模型初始化时选择计算方案。
 
+![image](https://github.com/user-attachments/assets/c5c1e3e9-e44d-4758-9e5a-2949e7e82e7c)
+
+
 ### 3.4 使用Paddle.js
 前面介绍了Paddle.js的核心模块和工作原理，本节将根据具体的代码介绍如何使用Paddle.js，在这个过程中可以对Paddle.js的设计有大致的了解。以一个简单的两层神经卷积网络为例，模型文件如下。 （此处未给出具体模型文件代码内容，按原文保留） 
