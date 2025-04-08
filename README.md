@@ -1,2 +1,4 @@
 # Paddlejs
-web智能化，使用Paddlejs等前端推理引擎实现AI应用开发，利用前端技术实现深度学习的模型部署和预测的基础上，模型开发的全链路从模型供给到业务实现，串联起来前端AI开发的整个流程
+/packages/paddlejs-models
+
+/packages/paddlejs-examples不同模型的集成方案，低代码的模型接入方式
