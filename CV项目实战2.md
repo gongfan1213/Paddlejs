@@ -187,3 +187,134 @@ export function blurBackground(seg_values: number[], dest_canvas: HTMLCanvasElem
     }
 }
 ``` 
+
+
+```javascript
+tempContext.putImageData(tempScaleData, 0, 0);
+// 在目标canvas上绘制虚化后的canvas
+dest_ctx.drawImage(blurCanvas, 
+    -backgroundSize.bx, -backgroundSize.by, 
+    backgroundSize.bw, backgroundSize.bh);
+// 在目标canvas上绘制分割后的人像
+dest_ctx.drawImage(tempCanvas, 
+    -backgroundSize.bx, -backgroundSize.by, 
+    backgroundSize.bw, backgroundSize.bh);
+```
+人像分割效果如图4 - 8所示。
+
+### 4.2.3 目标检测
+目标检测（Object Detection）有两个任务：一个是识别出图像中的目标所属类别，这与图像分类目标是一样的；另一个是识别出目标的边界，也就是识别出目标的位置信息，目标可能有一个，也可能有多个。如图4 - 9所示，想要检测出图像中的猫，先要识别出图像中是否有猫这个类别，再推理出猫的位置信息。
+
+#### 1. 目标检测概念和应用场景
+目标检测是计算机视觉的主要研究方向之一，有着广泛的应用场景，如人脸检测、行人检测和文字检测等，目标检测是这些视觉任务的基础。既然为基础，就说明目标检测只是应用中的一个环节，先检测出图像中目标的类别及位置信息，再结合检测的结果对图像进行进一步处理，并作为关键点检测等其他模型的输入，以识别目标的详细信息。
+
+#### 2. 实战：人脸检测
+先识别出图像中是否有人脸及人脸的位置信息，再通过位置信息裁剪出图像中的人脸部位，通过关键点模型推理出面部的关键点，是人脸检测相关应用的常见思路。
+
+简化版的表情识别应用，可根据唇部关键点的相对位置信息，判断出嘴角是上扬的还是下弯的，是紧闭的还是张开的，以此得出用户是开怀大笑、微笑的还是难过的。美妆应用可根据关键点信息描绘出面部各区域，结合增强现实渲染技术给面部区域上妆或美容。
+
+这些应用都依赖人脸检测模型，检测图像中是否有人脸及人脸框的位置。@paddlejs - models/tinyYolo SDK封装了人脸检测的功能，是一种单目标检测，使用方式如下。
+```javascript
+// 引入tinyYolo
+import * as tinyYolo from '@paddlejs - models/tinyYolo';
+
+// 初始化SDK
+await tinyYolo.load();
+
+// 传入图像，获取人脸框坐标
+const res = await tinyYolo.detect(img);
+```
+① 引入tinyYolo SDK。
+② 调用load方法完成初始化。具体实现如下。
+```javascript
+export async function load(config: ModelConfig) {
+    const {
+        path = 'https://paddlejs.cdn.bcebos.com/models/tinyYolo',
+        mean = [117.001 / 255, 114.697 / 255, 97.404 / 255],
+        std = [1, 1, 1]
+    } = config;
+
+    const runner = new Runner({
+        modelPath: path,
+        feedShape: {
+            fw: 320,
+            fh: 320
+        },
+        mean: mean,
+        std: std
+    });
+
+    await runner.init();
+}
+```
+③ 调用detect方法完成推理。具体实现如下。
+```javascript
+/**
+ * @param image传入图像
+ * @return目标在图像中的位置信息
+ */
+export async function detect(image) {
+    const res = await runner.predict(image);
+    // 进一步处理推理结果，若在图像中检测到人脸，则返回长度为4的数组；若未检测到人脸，则返回空数组
+    const result = process(res, image);
+    return result;
+}
+```
+人脸检测效果如图4 - 10所示。
+
+#### 3. 实战：手势识别
+手势识别任务首先识别出图像中的手势位置，进而识别出手势的分类。利用手掌的位置，可通过手部移动路径隔空控制页面中一些物体的移动，如图4 - 11所示，用手部移动路径隔空控制螺旋丸旋转。利用石头、剪子和布的手势分类可以做出一个如图4 - 12所示的猜拳小游戏。
+
+@paddlejs - models/gesture SDK封装了手部检测及手势识别功能，SDK使用了手部检测及手势分类两个模型。通过手部检测，确定图像中是否有手部目标及手掌的位置，根据检测到的手部信息对原图像进行仿射变换并裁剪，将处理后的图像作为手势分类模型的输入，识别出最终的手势类别。SDK使用方式如下。
+```javascript
+// 引入gesture SDK
+import * as gesture from '@paddlejs - models/gesture';
+
+// 初始化SDK
+await gesture.load();
+
+// 传入图像，获取手势分类结果
+const res = await gesture.classify(img);
+```
+① 引入gesture SDK。
+② 调用load方法完成初始化。具体实现如下。
+```javascript
+export async function load() {
+    const detectRunner = new Runner({
+        modelPath: 'https://paddlejs.bj.bcebos.com/models/fuse/gesture/gesture_det_fuse_activation'
+    });
+
+    const recRunner = new Runner({
+        modelPath: 'https://paddlejs.bj.bcebos.com/models/fuse/gesture/gesture_rec_fuse_activation'
+    });
+
+    // 初始化手势检测模型
+    await detectRunner.init();
+    // 初始化手势分类模型
+    await recRunner.init();
+}
+```
+③ 调用classify方法完成推理。具体实现如下。
+```javascript
+export async function classify(image) {
+    // 手部检测推理
+    const detectResult = await detectRunner.predict(image);
+    const post = new DetectProcess(detectResult, canvas);
+    const box = await post.outputBox(anchorResults);
+    if (!box) {
+        return '识别不到手';
+    }
+    // 手部框计算
+    calculateBox(box);
+    // 根据手部检测结果对原图像进行仿射变换和裁剪处理
+    const feed = await post.outputFeed(recRunner);
+    // 手势识别推理
+    const recResult = await recRunner.predictWithFeed(feed);
+    // 计算手势分类
+    const lmProcess = new LMProcess(recResult);
+    lmProcess.output();
+    const type = lmProcess.type || '';
+    return type;
+}
+```
+手势识别效果如图4 - 13所示。 
