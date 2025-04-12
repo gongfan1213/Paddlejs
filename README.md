@@ -1,11 +1,17 @@
 # Paddlejs
+
 /packages/paddlejs-models
 
 /packages/paddlejs-examples不同模型的集成方案，低代码的模型接入方式
 
+![image](https://github.com/user-attachments/assets/3d9470d2-db84-49f5-bd8f-fab6faecfc16)
+
+
 # 目录
 
 Contents
+
+
 **第1部分 前端与AI**
 
 **第1章 Web AI** ………………………………………………2
